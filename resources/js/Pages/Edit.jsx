@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import Layout from "../Layouts/Layout";
 
 const Edit = () => {
     const [user, setUser] = useState(null);
@@ -76,44 +77,8 @@ const Edit = () => {
     };
 
     return (
-        <div className="relative min-h-screen">
-            <div
-                className="flex items-center justify-center min-h-screen"
-                style={{
-                    background:
-                        "radial-gradient(circle at 20% 30%, #a18cd1 0%, #fbc2eb 40%, #fad0c4 100%), repeating-linear-gradient(135deg, rgba(102,126,234,0.1) 0px, rgba(102,126,234,0.1) 2px, transparent 2px, transparent 8px)",
-                    backgroundBlendMode: "overlay",
-                    position: "absolute",
-                    inset: 0,
-                    zIndex: 0,
-                }}
-            ></div>
-
-            <nav className="w-full bg-gradient-to-r from-indigo-700 via-purple-600 to-pink-500 p-4 flex items-center justify-between shadow-lg relative z-10">
-                <div className="flex items-center space-x-3">
-                    <span className="text-white font-extrabold text-2xl tracking-wide drop-shadow-lg">
-                        MyApp
-                    </span>
-                </div>
-                <div className="flex items-center space-x-4">
-                    <a
-                        href="/"
-                        className="relative group text-white font-medium px-3 py-1 transition"
-                    >
-                        Home
-                        <span className="absolute left-0 -bottom-1 w-0 h-0.5 bg-white transition-all group-hover:w-full"></span>
-                    </a>
-                    <a
-                        href="/dashboard"
-                        className="relative group text-white font-medium px-3 py-1 transition"
-                    >
-                        Dashboard
-                        <span className="absolute left-0 -bottom-1 w-0 h-0.5 bg-white transition-all group-hover:w-full"></span>
-                    </a>
-                </div>
-            </nav>
-
-            <div className="flex items-center justify-center min-h-screen relative z-10">
+        <Layout user={user}>
+            <div className="flex items-center justify-center min-h-screen relative">
                 <div className="w-full max-w-md p-6 bg-white rounded-lg shadow-md bg-opacity-90 backdrop-blur">
                     <h1 className="text-3xl font-bold mb-4">Edit Profile</h1>
                     <form onSubmit={handleSubmit} className="space-y-4">
@@ -212,21 +177,7 @@ const Edit = () => {
                     </dialog>
                 </div>
             </div>
-
-            {/* Custom animation for gradient */}
-            <style>
-                {`
-                @keyframes gradient-x {
-                    0%, 100% { background-position: 0% 50%; }
-                    50% { background-position: 100% 50%; }
-                }
-                .animate-gradient-x {
-                    background-size: 200% 200%;
-                    animation: gradient-x 8s ease-in-out infinite;
-                }
-            `}
-            </style>
-        </div>
+        </Layout>
     );
 };
 

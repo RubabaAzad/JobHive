@@ -13,32 +13,36 @@ class ApplicationController extends Controller
     // POST /api/jobs/{id}/apply
     public function apply(Request $request, $jobId)
     {
-        $user = Auth::user();
+        try {
+            $user = Auth::user();
 
-        // Optional: check if job exists
-        $job = Job::findOrFail($jobId);
+            // Optional: check if job exists
+            $job = Job::findOrFail($jobId);
 
-        // Check if already applied
-        if (Application::where('user_id', $user->id)->where('job_id', $jobId)->exists()) {
-            return response()->json(['message' => 'You already applied to this job'], 409);
-        }
+            // Check if already applied
+            if (Application::where('user_id', $user->id)->where('job_id', $jobId)->exists()) {
+          return response()->json(['message' => 'You already applied to this job'], 409);
+            }
 
-        // Validate input
-        $request->validate([
-            'cover_letter' => 'nullable|string',
-            'cv' => 'required|file|mimes:pdf,doc,docx|max:2048', // CV is required
-        ]);
+            // Validate input
+            $request->validate([
+          'cover_letter' => 'nullable|string',
+          'cv' => 'required|file|mimes:pdf,doc,docx|max:2048', // CV is required
+            ]);
             $cvPath = $request->file('cv')->store('cvs', 'public');
 
-        // Save application
-        $application = Application::create([
-            'user_id' => $user->id,
-            'job_id' => $jobId,
-            'cover_letter' => $request->cover_letter,
-            'cv_path' => $cvPath,
-        ]);
+            // Save application
+            $application = Application::create([
+              'user_id' => $user->id,
+              'job_id' => $jobId,
+              'cover_letter' => $request->cover_letter,
+              'cv_path' => $cvPath,
+            ]);
 
-        return response()->json(['message' => 'Application submitted', 'application' => $application]);
+            return response()->json(['message' => 'Application submitted', 'application' => $application]);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'An error occurred', 'error' => $e->getMessage()], 500);
+        }
     }
 
     // Optional: View user applications
@@ -77,4 +81,3 @@ class ApplicationController extends Controller
         ]);
     }
 }
-

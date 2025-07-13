@@ -1,96 +1,84 @@
-// import { motion } from "framer-motion";
-// import { Menu, X } from "lucide-react"; // Optional: lucide icons (or use your own)
 import { router } from "@inertiajs/react";
-import axios from "axios";
-import { useEffect, useState } from "react";
-import Header from "./Header.jsx";
-function Layout() {
-    const token = localStorage.getItem("token");
-    if (!token) {
-        router.visit("/login");
-    }
-    const [isScrolled, setIsScrolled] = useState(false);
-    const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-    useEffect(() => {
-        const handleScroll = () => {
-            setIsScrolled(window.scrollY > 50);
-        };
-
-        window.addEventListener("scroll", handleScroll);
-        return () => window.removeEventListener("scroll", handleScroll);
-    }, []);
-
-    const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
-
-    const handleSubmit = async (event) => {
-        event.preventDefault();
-
-        try {
-            await axios.post(
-                "http://127.0.0.1:8000/api/logout",
-                {
-                    session_id: localStorage.getItem("session"),
-                },
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                }
-            );
-        } catch (error) {
-            console.error("Logout error:", error);
-        }
-        localStorage.removeItem("token");
-        localStorage.removeItem("session");
-        router.visit("/login");
+const Layout = ({ children, user }) => {
+    const handleLogout = async () => {
+        router.post("/logout");
     };
 
     return (
-        <>
-            <div className="md:flex-[2_2_0] w-screen">
-                <Header></Header>
-            </div>
-            <div className="md:flex-[2_2_0] w-18 max-w-52">
-                <div className="absolute left-0 h-screen flex flex-col w-20 md:w-full">
-                    <div className="drawer lg:drawer-open">
-                        <input
-                            id="my-drawer-2"
-                            type="checkbox"
-                            className="drawer-toggle"
-                        />
+        <div className="min-h-screen bg-base-200">
+            {/* Top Navbar */}
+            <div className="navbar bg-base-100 shadow-lg">
+                <div className="flex-1">
+                    <a
+                        className="btn btn-ghost normal-case text-xl"
+                        href="/dashboard"
+                    >
+                        JobHive
+                    </a>
+                </div>
+                <div className="flex-none gap-2">
+                    <button className="btn btn-ghost btn-circle">
+                        {/* Bell Icon */}
+                        <svg
+                            width="20"
+                            height="20"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            viewBox="0 0 24 24"
+                        >
+                            <path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                            <path d="M13.73 21a2 2 0 01-3.46 0"></path>
+                        </svg>
+                    </button>
 
-                        <div className="drawer-side">
-                            <label
-                                htmlFor="my-drawer-2"
-                                aria-label="close sidebar"
-                                className="drawer-overlay"
-                            ></label>
-                            <ul className="menu stone-200 text-base-content min-h-full w-80 p-4">
-                                {/* Sidebar content here */}
-                                <li>
-                                    <a>My Projects</a>
-                                </li>
-                                <li>
-                                    <a>All Projects</a>
-                                </li>
-                                <li>
-                                    <form action="POST" onSubmit={handleSubmit}>
-                                        <button
-                                            className="btn-error w-full"
-                                            type="submit"
-                                        >
-                                            Log Out
-                                        </button>
-                                    </form>
-                                </li>
-                            </ul>
+                    <div className="dropdown">
+                        <div tabIndex={0} role="button" className="m-5 mr-10">
+                            <div className="avatar">
+                                <div className="w-8 rounded-full ring ring-primary ring-offset-base-100 ring-offset-2">
+                                    <img
+                                        src="https://i.pravatar.cc/150?img=3"
+                                        alt="profile"
+                                    />
+                                </div>
+                            </div>
                         </div>
+                        <ul
+                            tabIndex={0}
+                            className="dropdown-content menu bg-base-100 rounded-box shadow-sm w-20"
+                        >
+                            <li>
+                                <button
+                                    className="btn btn-error btn-sm"
+                                    onClick={async () => {
+                                        const token =
+                                            localStorage.getItem("token");
+                                        if (!token) return;
+                                        await fetch("/api/logout", {
+                                            method: "POST",
+                                            headers: {
+                                                Authorization: `Bearer ${token}`,
+                                                "Content-Type":
+                                                    "application/json",
+                                            },
+                                        });
+                                        localStorage.removeItem("token");
+                                        window.location.href = "/login";
+                                    }}
+                                >
+                                    Logout
+                                </button>
+                            </li>
+                        </ul>
                     </div>
                 </div>
             </div>
-        </>
+
+            {/* Main Content */}
+            <div className="p-4">{children}</div>
+        </div>
     );
-}
+};
 
 export default Layout;
