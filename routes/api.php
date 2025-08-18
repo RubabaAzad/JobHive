@@ -7,7 +7,7 @@ use App\Http\Controllers\JobController;
 use App\Http\Controllers\ApplicationController;
 
 Route::get('/user', function (Request $request) {
-    return $request->user();
+  return $request->user()->load('jobs');
 })->middleware('auth:sanctum');
 
 
@@ -22,6 +22,8 @@ Route::post('/post-a-job', [JobController::class, 'createJob'])->middleware('aut
 Route::put('/jobs/{job}', [JobController::class, 'updateJob'])->middleware('auth:sanctum');
 Route::delete('/jobs/{job}', [JobController::class, 'deleteJob'])->middleware('auth:sanctum');
 Route::get('/jobs', [JobController::class, 'getJobs'])->middleware('auth:sanctum');
+Route::get('/search-jobs', [JobController::class, 'searchJobs'])->middleware('auth:sanctum');
+
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/jobs/{id}/apply', [ApplicationController::class, 'apply']);

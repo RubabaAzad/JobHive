@@ -11,40 +11,65 @@ class JobController extends Controller
     //
     public function createJob(Request $request)
 {
-    $user = Auth::user();
+    try {
+      $user = Auth::user();
 
-    $request->validate([
+      $request->validate([
         'title' => 'required|string|max:255',
         'description' => 'required|string',
         'location' => 'required|string',
         'category' => 'nullable|string|max:255',
         'salary' => 'nullable|integer'
-    ]);
+      ]);
 
-    $job = Job::create([
+      $job = Job::create([
         'user_id' => $user->id,
+        'company_name' => $request->company_name,
+        'deadline' => $request->deadline,
         'title' => $request->title,
         'description' => $request->description,
         'location' => $request->location,
         'category' => $request->category,
         'salary' => $request->salary,
-    ]);
+      ]);
 
-    return response()->json(['message' => 'Job posted successfully', 'job' => $job]);
+      return response()->json(['message' => 'Job posted successfully', 'job' => $job]);
+    } catch (\Exception $e) {
+      return response()->json(['message' => 'An error occurred', 'error' => $e->getMessage()], 500);
+    }
 }
 public function updateJob(Request $request, Job $job){
-  $user = Auth::user();
-  $job = Job::find($job->id);
-  if (!$job || $job->user_id !== $user->id) {
+  try {
+    $user = Auth::user();
+
+    $request->validate([
+      'title' => 'required|string|max:255',
+      'description' => 'required|string',
+      'location' => 'required|string',
+      'company_name' => 'nullable|string|max:255',
+      'deadline' => 'nullable|date',
+      'category' => 'nullable|string|max:255',
+      'salary' => 'nullable|integer'
+    ]);
+
+    $job = Job::find($job->id);
+    if (!$job || $job->user_id !== $user->id) {
       return response()->json(['message' => 'Job not found or unauthorized'], 404);
+    }
+
+    $job->title = $request->title;
+    $job->company_name = $request->company_name;
+    $job->deadline = $request->deadline;
+    $job->description = $request->description;
+    $job->location = $request->location;
+    $job->category = $request->category;
+    $job->salary = $request->salary;
+    $job->save();
+
+    return response()->json(['message' => 'Job updated successfully', 'job' => $job]);
+  } catch (\Exception $e) {
+    return response()->json(['message' => 'An error occurred', 'error' => $e->getMessage()], 500);
   }
-  $job->title = $request->title;
-  $job->description = $request->description;
-  $job->location = $request->location;
-  $job->category = $request->category;
-  $job->salary = $request->salary;
-  $job->save();
-  return response()->json(['message' => 'Job updated successfully', 'job' => $job]);
 }
 public function deleteJob(Job $job)
 {
@@ -63,4 +88,15 @@ public function getJobs(){
     ->get();
   return response()->json(['jobs' => $jobs]);
 }
+  public function searchJobs(Request $request){
+    $user = Auth::user();
+    $jobs = Job::where('user_id', '!=', $user->id)
+      ->where(function($query) use ($request) {
+          $query->where('title', 'like', '%' . $request->input('search') . '%')
+                ->orWhere('description', 'like', '%' . $request->input('search') . '%');
+      })
+      ->orderBy('created_at', 'desc')
+      ->get();
+    return response()->json(['jobs' => $jobs]);
+  }
 }

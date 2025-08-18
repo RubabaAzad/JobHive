@@ -11,6 +11,14 @@ const Dashboard = () => {
     const [unauthorized, setUnauthorized] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
     const [filteredJobs, setFilteredJobs] = useState([]);
+    const [myjobtitle, setMyJobTitle] = useState("");
+    const [myjobid, setMyJobId] = useState(0);
+    const [myjobdescription, setMyJobDescription] = useState("");
+    const [myjobcompany, setMyJobCompany] = useState("");
+    const [myjobdeadline, setMyJobDeadline] = useState("");
+    const [myjobsalary, setMyJobSalary] = useState(0);
+    const [myjoblocation, setMyJobLocation] = useState("");
+    const [myjobcategory, setMyJobCategory] = useState("");
     useEffect(() => {
         if (!token) {
             window.location.href = "/login";
@@ -33,6 +41,7 @@ const Dashboard = () => {
                     const userData = await response.json();
                     setUser(userData);
                     setLoading(false);
+                    console.log("userData", userData);
                 } else {
                     setUnauthorized(true);
                     setLoading(false);
@@ -225,6 +234,323 @@ const Dashboard = () => {
                             </ul>
                         </div>
                     </div>
+                    <div className="card bg-base-100 shadow-xl">
+                        <div className="card-body">
+                            <h2 className="card-title">
+                                {/* FileText Icon */}
+                                <svg
+                                    width="20"
+                                    height="20"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                    <polyline points="14 2 14 8 20 8"></polyline>
+                                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                                    <polyline points="10 9 9 9 8 9"></polyline>
+                                </svg>
+                                My Jobs
+                            </h2>
+                            <ul className="list-disc ml-6 mt-2">
+                                {user?.jobs?.length > 0 ? (
+                                    user.jobs.map((job) => (
+                                        <li key={job.id} className="my-2">
+                                            <div className="flex flex-row justify-between items-center">
+                                                <div
+                                                    className="w-full hover:underline cursor-pointer"
+                                                    onClick={() => {
+                                                        setMyJobTitle(
+                                                            job.title
+                                                        );
+                                                        setMyJobId(job.id);
+                                                        setMyJobDescription(
+                                                            job.description
+                                                        );
+                                                        setMyJobCompany(
+                                                            job.company_name
+                                                        );
+                                                        setMyJobDeadline(
+                                                            job.deadline
+                                                        );
+                                                        setMyJobSalary(
+                                                            job.salary
+                                                        );
+                                                        setMyJobLocation(
+                                                            job.location
+                                                        );
+                                                        setMyJobCategory(
+                                                            job.category
+                                                        );
+
+                                                        document
+                                                            .getElementById(
+                                                                `job_modal_${job.id}`
+                                                            )
+                                                            .showModal();
+                                                    }}
+                                                >
+                                                    {job.title.length > 20
+                                                        ? `${job.title.slice(
+                                                              0,
+                                                              20
+                                                          )}...`
+                                                        : job.title}{" "}
+                                                    –{" "}
+                                                    <span className="text-success">
+                                                        Active
+                                                    </span>
+                                                </div>
+                                                <dialog
+                                                    id={`job_modal_${job.id}`}
+                                                    className="modal modal-bottom sm:modal-middle"
+                                                >
+                                                    <div className="modal-box flex flex-col gap-4">
+                                                        <div className="flex flex-col gap-2">
+                                                            <label htmlFor="jobtitle">
+                                                                Job Title:
+                                                            </label>
+                                                            <input
+                                                                className="input input-neutral w-full"
+                                                                type="text"
+                                                                value={
+                                                                    myjobtitle
+                                                                }
+                                                                onChange={(e) =>
+                                                                    setMyJobTitle(
+                                                                        e.target
+                                                                            .value
+                                                                    )
+                                                                }
+                                                            />
+                                                        </div>
+                                                        <div className="flex flex-col gap-2">
+                                                            <label htmlFor="jobcompany">
+                                                                Company Name:
+                                                            </label>
+                                                            <input
+                                                                className="input input-neutral w-full"
+                                                                type="text"
+                                                                value={
+                                                                    myjobcompany
+                                                                }
+                                                                onChange={(e) =>
+                                                                    setMyJobCompany(
+                                                                        e.target
+                                                                            .value
+                                                                    )
+                                                                }
+                                                            ></input>
+                                                        </div>
+                                                        <div className="flex flex-col gap-2">
+                                                            <label htmlFor="jobdescription">
+                                                                Description:
+                                                            </label>
+                                                            <textarea
+                                                                className="textarea textarea-bordered w-full"
+                                                                placeholder="Job description"
+                                                                value={
+                                                                    myjobdescription
+                                                                }
+                                                                onChange={(e) =>
+                                                                    setMyJobDescription(
+                                                                        e.target
+                                                                            .value
+                                                                    )
+                                                                }
+                                                            ></textarea>
+                                                        </div>
+                                                        <div className="flex flex-col gap-2">
+                                                            <label htmlFor="jobdeadline">
+                                                                Deadline:
+                                                            </label>
+                                                            <input
+                                                                className="input input-neutral w-full"
+                                                                type="date"
+                                                                value={
+                                                                    myjobdeadline
+                                                                }
+                                                                onChange={(e) =>
+                                                                    setMyJobDeadline(
+                                                                        e.target
+                                                                            .value
+                                                                    )
+                                                                }
+                                                            ></input>
+                                                        </div>
+
+                                                        <div className="flex flex-col gap-2">
+                                                            <label htmlFor="jobsalary">
+                                                                Salary:
+                                                            </label>
+                                                            <input
+                                                                className="input input-neutral w-full"
+                                                                type="number"
+                                                                value={
+                                                                    myjobsalary
+                                                                }
+                                                                onChange={(e) =>
+                                                                    setMyJobSalary(
+                                                                        e.target
+                                                                            .value
+                                                                    )
+                                                                }
+                                                            ></input>
+                                                        </div>
+                                                        <div className="flex flex-col gap-2">
+                                                            <label htmlFor="joblocation">
+                                                                Location:
+                                                            </label>
+                                                            <input
+                                                                className="input input-neutral w-full"
+                                                                type="text"
+                                                                value={
+                                                                    myjoblocation
+                                                                }
+                                                                onChange={(e) =>
+                                                                    setMyJobLocation(
+                                                                        e.target
+                                                                            .value
+                                                                    )
+                                                                }
+                                                            ></input>
+                                                        </div>
+                                                        <div className="flex flex-col gap-2">
+                                                            <label htmlFor="jobcategory">
+                                                                Category:
+                                                            </label>
+                                                            <input
+                                                                className="input input-neutral w-full"
+                                                                type="text"
+                                                                value={
+                                                                    myjobcategory
+                                                                }
+                                                                onChange={(e) =>
+                                                                    setMyJobCategory(
+                                                                        e.target
+                                                                            .value
+                                                                    )
+                                                                }
+                                                            ></input>
+                                                        </div>
+
+                                                        <div className="modal-action space-x-2">
+                                                            <button
+                                                                className="btn btn-success"
+                                                                onClick={async (
+                                                                    e
+                                                                ) => {
+                                                                    try {
+                                                                        const response =
+                                                                            await fetch(
+                                                                                `/api/jobs/${myjobid}`,
+                                                                                {
+                                                                                    method: "PUT",
+                                                                                    headers:
+                                                                                        {
+                                                                                            "Content-Type":
+                                                                                                "application/json",
+                                                                                            Authorization: `Bearer ${token}`,
+                                                                                        },
+                                                                                    body: JSON.stringify(
+                                                                                        {
+                                                                                            title: myjobtitle,
+                                                                                            company_name:
+                                                                                                myjobcompany,
+                                                                                            description:
+                                                                                                myjobdescription,
+                                                                                            deadline:
+                                                                                                myjobdeadline,
+                                                                                            salary: myjobsalary,
+                                                                                            location:
+                                                                                                myjoblocation,
+                                                                                            category:
+                                                                                                myjobcategory,
+                                                                                        }
+                                                                                    ),
+                                                                                }
+                                                                            );
+                                                                        if (
+                                                                            response.ok
+                                                                        ) {
+                                                                            alert(
+                                                                                "Job updated successfully!"
+                                                                            );
+                                                                            document
+                                                                                .getElementById(
+                                                                                    `job_modal_${myjobid}`
+                                                                                )
+                                                                                .close();
+                                                                            window.location.reload();
+                                                                        } else {
+                                                                            alert(
+                                                                                "Failed to update job."
+                                                                            );
+                                                                        }
+                                                                    } catch (error) {
+                                                                        console.error(
+                                                                            "Error updating job:",
+                                                                            error
+                                                                        );
+                                                                        alert(
+                                                                            "An error occurred while updating the job."
+                                                                        );
+                                                                    }
+                                                                }}
+                                                            >
+                                                                Save Changes
+                                                            </button>
+                                                            <form method="dialog">
+                                                                {/* if there is a button in form, it will close the modal */}
+                                                                <button
+                                                                    className="btn"
+                                                                    onClick={() => {
+                                                                        setMyJobTitle(
+                                                                            ""
+                                                                        );
+                                                                        setMyJobId(
+                                                                            0
+                                                                        );
+                                                                        setMyJobDescription(
+                                                                            ""
+                                                                        );
+                                                                        setMyJobCompany(
+                                                                            ""
+                                                                        );
+                                                                        setMyJobDeadline(
+                                                                            ""
+                                                                        );
+                                                                        setMyJobSalary(
+                                                                            0
+                                                                        );
+                                                                        setMyJobLocation(
+                                                                            ""
+                                                                        );
+                                                                        setMyJobCategory(
+                                                                            ""
+                                                                        );
+                                                                    }}
+                                                                >
+                                                                    Close
+                                                                </button>
+                                                            </form>
+                                                        </div>
+                                                    </div>
+                                                </dialog>
+                                                <div className="w-20 text-sm btn btn-error btn-sm">
+                                                    Delete
+                                                </div>
+                                            </div>
+                                        </li>
+                                    ))
+                                ) : (
+                                    <li>No jobs posted yet.</li>
+                                )}
+                            </ul>
+                        </div>
+                    </div>
                 </div>
 
                 {/* Recommended Jobs + Post a Job Button */}
@@ -283,9 +609,35 @@ const Dashboard = () => {
                                             className="grow"
                                             placeholder="Search jobs"
                                             value={searchQuery}
-                                            onChange={(e) =>
-                                                setSearchQuery(e.target.value)
-                                            }
+                                            onChange={async (e) => {
+                                                setSearchQuery(e.target.value);
+                                                const response = await fetch(
+                                                    `/api/search-jobs?query=${e.target.value}`,
+                                                    {
+                                                        headers: {
+                                                            Authorization: `Bearer ${token}`,
+                                                        },
+                                                    }
+                                                );
+                                                if (response.ok) {
+                                                    const data =
+                                                        await response.json();
+                                                    setFilteredJobs(
+                                                        data.jobs.filter(
+                                                            (job) =>
+                                                                job.title
+                                                                    .toLowerCase()
+                                                                    .includes(
+                                                                        e.target.value.toLowerCase()
+                                                                    )
+                                                        )
+                                                    );
+                                                } else {
+                                                    console.error(
+                                                        "Error fetching jobs"
+                                                    );
+                                                }
+                                            }}
                                         />
                                     </label>
                                     <button
@@ -299,17 +651,215 @@ const Dashboard = () => {
                                         Post a Job
                                     </button>
                                     <dialog id="my_modal_4" className="modal">
-                                        <div className="modal-box w-11/12 max-w-5xl">
-                                            <h3 className="font-bold text-lg">
-                                                Post a New Job
-                                            </h3>
-                                            <p className="py-4">
-                                                Job posting form will go here
-                                            </p>
-                                            <div className="modal-action">
+                                        <div className="modal-box flex flex-col gap-4">
+                                            <div className="flex flex-col gap-2">
+                                                <label htmlFor="jobtitle">
+                                                    Job Title:
+                                                </label>
+                                                <input
+                                                    className="input input-neutral w-full"
+                                                    type="text"
+                                                    value={myjobtitle}
+                                                    onChange={(e) =>
+                                                        setMyJobTitle(
+                                                            e.target.value
+                                                        )
+                                                    }
+                                                />
+                                            </div>
+                                            <div className="flex flex-col gap-2">
+                                                <label htmlFor="jobcompany">
+                                                    Company Name:
+                                                </label>
+                                                <input
+                                                    className="input input-neutral w-full"
+                                                    type="text"
+                                                    value={myjobcompany}
+                                                    onChange={(e) =>
+                                                        setMyJobCompany(
+                                                            e.target.value
+                                                        )
+                                                    }
+                                                ></input>
+                                            </div>
+                                            <div className="flex flex-col gap-2">
+                                                <label htmlFor="jobdescription">
+                                                    Description:
+                                                </label>
+                                                <textarea
+                                                    className="textarea textarea-bordered w-full"
+                                                    placeholder="Job description"
+                                                    value={myjobdescription}
+                                                    onChange={(e) =>
+                                                        setMyJobDescription(
+                                                            e.target.value
+                                                        )
+                                                    }
+                                                ></textarea>
+                                            </div>
+                                            <div className="flex flex-col gap-2">
+                                                <label htmlFor="jobdeadline">
+                                                    Deadline:
+                                                </label>
+                                                <input
+                                                    className="input input-neutral w-full"
+                                                    type="date"
+                                                    value={myjobdeadline}
+                                                    onChange={(e) =>
+                                                        setMyJobDeadline(
+                                                            e.target.value
+                                                        )
+                                                    }
+                                                ></input>
+                                            </div>
+
+                                            <div className="flex flex-col gap-2">
+                                                <label htmlFor="jobsalary">
+                                                    Salary:
+                                                </label>
+                                                <input
+                                                    className="input input-neutral w-full"
+                                                    type="number"
+                                                    value={myjobsalary}
+                                                    onChange={(e) =>
+                                                        setMyJobSalary(
+                                                            e.target.value
+                                                        )
+                                                    }
+                                                ></input>
+                                            </div>
+                                            <div className="flex flex-col gap-2">
+                                                <label htmlFor="joblocation">
+                                                    Location:
+                                                </label>
+                                                <input
+                                                    className="input input-neutral w-full"
+                                                    type="text"
+                                                    value={myjoblocation}
+                                                    onChange={(e) =>
+                                                        setMyJobLocation(
+                                                            e.target.value
+                                                        )
+                                                    }
+                                                ></input>
+                                            </div>
+                                            <div className="flex flex-col gap-2">
+                                                <label htmlFor="jobcategory">
+                                                    Category:
+                                                </label>
+                                                <input
+                                                    className="input input-neutral w-full"
+                                                    type="text"
+                                                    value={myjobcategory}
+                                                    onChange={(e) =>
+                                                        setMyJobCategory(
+                                                            e.target.value
+                                                        )
+                                                    }
+                                                ></input>
+                                            </div>
+
+                                            <div className="modal-action space-x-2">
+                                                <button
+                                                    className="btn btn-success"
+                                                    onClick={async (e) => {
+                                                        try {
+                                                            if (
+                                                                myjobtitle ===
+                                                                    "" ||
+                                                                myjobcompany ===
+                                                                    "" ||
+                                                                myjobdescription ===
+                                                                    "" ||
+                                                                myjobdeadline ===
+                                                                    "" ||
+                                                                myjobsalary <=
+                                                                    0 ||
+                                                                myjoblocation ===
+                                                                    "" ||
+                                                                myjobcategory ===
+                                                                    ""
+                                                            ) {
+                                                                alert(
+                                                                    "Please fill all fields correctly."
+                                                                );
+                                                            }
+                                                            const response =
+                                                                await fetch(
+                                                                    `/api/post-a-job`,
+                                                                    {
+                                                                        method: "POST",
+                                                                        headers:
+                                                                            {
+                                                                                "Content-Type":
+                                                                                    "application/json",
+                                                                                Authorization: `Bearer ${token}`,
+                                                                            },
+                                                                        body: JSON.stringify(
+                                                                            {
+                                                                                title: myjobtitle,
+                                                                                company_name:
+                                                                                    myjobcompany,
+                                                                                description:
+                                                                                    myjobdescription,
+                                                                                deadline:
+                                                                                    myjobdeadline,
+                                                                                salary: myjobsalary,
+                                                                                location:
+                                                                                    myjoblocation,
+                                                                                category:
+                                                                                    myjobcategory,
+                                                                            }
+                                                                        ),
+                                                                    }
+                                                                );
+                                                            if (response.ok) {
+                                                                alert(
+                                                                    "Job updated successfully!"
+                                                                );
+                                                                window.location.reload();
+                                                            } else {
+                                                                alert(
+                                                                    "Failed to update job."
+                                                                );
+                                                            }
+                                                        } catch (error) {
+                                                            console.error(
+                                                                "Error updating job:",
+                                                                error
+                                                            );
+                                                            alert(
+                                                                "An error occurred while updating the job."
+                                                            );
+                                                        }
+                                                    }}
+                                                >
+                                                    Post
+                                                </button>
                                                 <form method="dialog">
-                                                    <button className="btn btn-primary btn-sm">
-                                                        Post
+                                                    {/* if there is a button in form, it will close the modal */}
+                                                    <button
+                                                        className="btn"
+                                                        onClick={() => {
+                                                            setMyJobTitle("");
+                                                            setMyJobId(0);
+                                                            setMyJobDescription(
+                                                                ""
+                                                            );
+                                                            setMyJobCompany("");
+                                                            setMyJobDeadline(
+                                                                ""
+                                                            );
+                                                            setMyJobSalary(0);
+                                                            setMyJobLocation(
+                                                                ""
+                                                            );
+                                                            setMyJobCategory(
+                                                                ""
+                                                            );
+                                                        }}
+                                                    >
+                                                        Close
                                                     </button>
                                                 </form>
                                             </div>
