@@ -80,4 +80,53 @@ class ApplicationController extends Controller
             "message" => "Job details retrieved successfully"
         ]);
     }
+    public function updateApplicationStatus(Request $request, $applicationId)
+    {
+        try {
+            $request->validate([
+          'status' => 'required|in:pending,reviewed,accepted,rejected',
+            ]);
+
+            $application = Application::findOrFail($applicationId);
+            $application->status = $request->status;
+            $application->save();
+            
+            if($application->status === 'accepted') { 
+              $lotify = new \App\Models\Notification();
+              $lotify->user_id = $application->user_id;
+              $lotify->application_id = $application->id;
+              $lotify->job_id = $application->job_id;
+              $lotify->status = "unread";
+              $lotify->message = "Your application status has been updated to: " . $application->status. "Congratulations!";
+              $lotify->save();
+            }
+
+            return response()->json(['message' => 'Application status updated successfully', 'application' => $application]);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'An error occurred', 'error' => $e->getMessage()], 500);
+        }
+    }
+    public function markRead(Request $request, $notificationId)
+    {
+        try {
+            $notification = \App\Models\Notification::findOrFail($notificationId);
+            $notification->status = 'read';
+            $notification->save();
+
+            return response()->json(['message' => 'Notification marked as read', 'notification' => $notification]);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'An error occurred', 'error' => $e->getMessage()], 500);
+        }
+    }
+    public function markReadAll(Request $request)
+    {
+        try {
+            $user = Auth::user();
+            \App\Models\Notification::where('user_id', $user->id)->update(['status' => 'read']);
+
+            return response()->json(['message' => 'All notifications marked as read']);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'An error occurred', 'error' => $e->getMessage()], 500);
+        }
+    }
 }

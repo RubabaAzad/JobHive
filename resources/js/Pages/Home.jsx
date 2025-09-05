@@ -4,7 +4,6 @@ const Home = () => {
     const handlefunct = async () => {
         console.log("Nabiha");
     };
-    return (
         <>
             <button
                 className="btn"
@@ -13,7 +12,7 @@ const Home = () => {
                     handlefunct();
                 }}
             >
-                open modal
+                view
             </button>
 
             <dialog id="my_modal_3" className="modal">

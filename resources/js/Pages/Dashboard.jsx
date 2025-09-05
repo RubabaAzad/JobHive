@@ -11,6 +11,7 @@ const Dashboard = () => {
     const [unauthorized, setUnauthorized] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
     const [filteredJobs, setFilteredJobs] = useState([]);
+    const [myjobs, setMyJobs] = useState([]);
     const [myjobtitle, setMyJobTitle] = useState("");
     const [myjobid, setMyJobId] = useState(0);
     const [myjobdescription, setMyJobDescription] = useState("");
@@ -19,6 +20,12 @@ const Dashboard = () => {
     const [myjobsalary, setMyJobSalary] = useState(0);
     const [myjoblocation, setMyJobLocation] = useState("");
     const [myjobcategory, setMyJobCategory] = useState("");
+    const [selectedStatus, setSelectedStatus] = useState("");
+
+    const [applications, setApplications] = useState([]);
+    const [shortlistedApplications, setShortlistedApplications] = useState([]);
+    const [generalApplications, setGeneralApplications] = useState([]);
+
     useEffect(() => {
         if (!token) {
             window.location.href = "/login";
@@ -41,6 +48,7 @@ const Dashboard = () => {
                     const userData = await response.json();
                     setUser(userData);
                     setLoading(false);
+                    setMyJobs(userData.jobs);
                     console.log("userData", userData);
                 } else {
                     setUnauthorized(true);
@@ -86,6 +94,72 @@ const Dashboard = () => {
             fetchjobs();
         }
     }, [token]);
+    const handleStatusChange = async (e, applicationId, job_id = null) => {
+        const newStatus = e.target.value;
+        console.log("Selected status:", newStatus);
+
+        try {
+            if (!applicationId) {
+                alert("Application ID not found.");
+                return;
+            }
+
+            // Make API call to update status
+            const response = await fetch(
+                `/api/applications/${applicationId}/status`,
+                {
+                    method: "PUT",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`,
+                    },
+                    body: JSON.stringify({ status: newStatus }),
+                }
+            );
+
+            if (response.ok) {
+                // Update the local state
+                const updatedJobs = myjobs.map((job) => {
+                    if (job.id === job_id) {
+                        return {
+                            ...job,
+                            applications: job.applications.map((app) =>
+                                app.id === applicationId
+                                    ? { ...app, status: newStatus }
+                                    : app
+                            ),
+                        };
+                    }
+                    return job;
+                });
+
+                // ✅ Use setter function to update state
+                setMyJobs(updatedJobs);
+
+                // ✅ Find the specific job and update application lists
+                const currentJob = updatedJobs.find((job) => job.id === job_id);
+                if (currentJob) {
+                    const acceptedApplications = currentJob.applications.filter(
+                        (app) => app.status === "accepted"
+                    );
+                    const notAcceptedApplications =
+                        currentJob.applications.filter(
+                            (app) => app.status !== "accepted"
+                        );
+
+                    setShortlistedApplications(acceptedApplications);
+                    setGeneralApplications(notAcceptedApplications);
+                }
+
+                alert("Status updated successfully!");
+            } else {
+                alert("Failed to update status.");
+            }
+        } catch (error) {
+            console.error("Error updating status:", error);
+            alert("An error occurred while updating the status.");
+        }
+    };
     const handleApplySubmit = async (jobid) => {
         if (!coverLetter || !resume) {
             alert("Please fill in all fields.");
@@ -220,18 +294,80 @@ const Dashboard = () => {
                                 </svg>
                                 My Applications
                             </h2>
-                            <ul className="list-disc ml-6 mt-2">
-                                <li>
-                                    Frontend Developer at TechSoft –{" "}
-                                    <span className="text-success">
-                                        Shortlisted
-                                    </span>
-                                </li>
-                                <li>
-                                    Backend Engineer at Cloudify –{" "}
-                                    <span className="text-warning">Viewed</span>
-                                </li>
-                            </ul>
+                            <button
+                                className="btn btn-primary"
+                                onClick={() =>
+                                    document
+                                        .getElementById("my_modal_5")
+                                        .showModal()
+                                }
+                            >
+                                view
+                            </button>
+                            <dialog
+                                id="my_modal_5"
+                                className="modal modal-bottom sm:modal-middle"
+                            >
+                                <div className="modal-box">
+                                    <h3 className="font-bold text-lg">
+                                        My applications
+                                    </h3>
+                                    <div className="py-4">
+                                        <ul className="list-disc ml-6 mt-2">
+                                            {user?.applications?.length > 0 ? (
+                                                user.applications.map(
+                                                    (application) => (
+                                                        <li
+                                                            key={application.id}
+                                                            className="my-2"
+                                                        >
+                                                            {application.job
+                                                                .title.length >
+                                                            20
+                                                                ? `${application.job.title.slice(
+                                                                      0,
+                                                                      20
+                                                                  )}...`
+                                                                : application
+                                                                      .job
+                                                                      .title}{" "}
+                                                            –{" "}
+                                                            <span
+                                                                className={
+                                                                    application.status ===
+                                                                    "accepted"
+                                                                        ? "text-success"
+                                                                        : application.status ===
+                                                                          "pending"
+                                                                        ? "text-warning"
+                                                                        : "text-error"
+                                                                }
+                                                            >
+                                                                {application.status
+                                                                    .charAt(0)
+                                                                    .toUpperCase() +
+                                                                    application.status.slice(
+                                                                        1
+                                                                    )}
+                                                            </span>
+                                                        </li>
+                                                    )
+                                                )
+                                            ) : (
+                                                <p>No applications found.</p>
+                                            )}
+                                        </ul>
+                                    </div>
+                                    <div className="modal-action">
+                                        <form method="dialog">
+                                            {/* if there is a button in form, it will close the modal */}
+                                            <button className="btn">
+                                                Close
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </dialog>
                         </div>
                     </div>
                     <div className="card bg-base-100 shadow-xl">
@@ -254,301 +390,815 @@ const Dashboard = () => {
                                 </svg>
                                 My Jobs
                             </h2>
-                            <ul className="list-disc ml-6 mt-2">
-                                {user?.jobs?.length > 0 ? (
-                                    user.jobs.map((job) => (
-                                        <li key={job.id} className="my-2">
-                                            <div className="flex flex-row justify-between items-center">
-                                                <div
-                                                    className="w-full hover:underline cursor-pointer"
-                                                    onClick={() => {
-                                                        setMyJobTitle(
-                                                            job.title
-                                                        );
-                                                        setMyJobId(job.id);
-                                                        setMyJobDescription(
-                                                            job.description
-                                                        );
-                                                        setMyJobCompany(
-                                                            job.company_name
-                                                        );
-                                                        setMyJobDeadline(
-                                                            job.deadline
-                                                        );
-                                                        setMyJobSalary(
-                                                            job.salary
-                                                        );
-                                                        setMyJobLocation(
-                                                            job.location
-                                                        );
-                                                        setMyJobCategory(
-                                                            job.category
-                                                        );
+                            <button
+                                className="btn btn-primary"
+                                onClick={() =>
+                                    document
+                                        .getElementById("my_job_modal")
+                                        .showModal()
+                                }
+                            >
+                                view
+                            </button>
 
-                                                        document
-                                                            .getElementById(
-                                                                `job_modal_${job.id}`
-                                                            )
-                                                            .showModal();
-                                                    }}
-                                                >
-                                                    {job.title.length > 20
-                                                        ? `${job.title.slice(
-                                                              0,
-                                                              20
-                                                          )}...`
-                                                        : job.title}{" "}
-                                                    –{" "}
-                                                    <span className="text-success">
-                                                        Active
-                                                    </span>
-                                                </div>
-                                                <dialog
-                                                    id={`job_modal_${job.id}`}
-                                                    className="modal modal-bottom sm:modal-middle"
-                                                >
-                                                    <div className="modal-box flex flex-col gap-4">
-                                                        <div className="flex flex-col gap-2">
-                                                            <label htmlFor="jobtitle">
-                                                                Job Title:
-                                                            </label>
-                                                            <input
-                                                                className="input input-neutral w-full"
-                                                                type="text"
-                                                                value={
-                                                                    myjobtitle
-                                                                }
-                                                                onChange={(e) =>
+                            <dialog
+                                id="my_job_modal"
+                                className="modal modal-bottom sm:modal-middle"
+                            >
+                                <div className="modal-box">
+                                    <h3 className="font-bold text-lg">
+                                        My Posted Jobs
+                                    </h3>
+                                    <div className="py-4">
+                                        <ul className="list-disc ml-6 mt-2">
+                                            {myjobs?.length > 0 ? (
+                                                user.jobs.map((job) => (
+                                                    <li
+                                                        key={job.id}
+                                                        className="my-2"
+                                                    >
+                                                        <div className="flex flex-row justify-between items-center">
+                                                            <div
+                                                                className="w-full hover:underline cursor-pointer"
+                                                                onClick={() => {
                                                                     setMyJobTitle(
-                                                                        e.target
-                                                                            .value
-                                                                    )
-                                                                }
-                                                            />
-                                                        </div>
-                                                        <div className="flex flex-col gap-2">
-                                                            <label htmlFor="jobcompany">
-                                                                Company Name:
-                                                            </label>
-                                                            <input
-                                                                className="input input-neutral w-full"
-                                                                type="text"
-                                                                value={
-                                                                    myjobcompany
-                                                                }
-                                                                onChange={(e) =>
-                                                                    setMyJobCompany(
-                                                                        e.target
-                                                                            .value
-                                                                    )
-                                                                }
-                                                            ></input>
-                                                        </div>
-                                                        <div className="flex flex-col gap-2">
-                                                            <label htmlFor="jobdescription">
-                                                                Description:
-                                                            </label>
-                                                            <textarea
-                                                                className="textarea textarea-bordered w-full"
-                                                                placeholder="Job description"
-                                                                value={
-                                                                    myjobdescription
-                                                                }
-                                                                onChange={(e) =>
+                                                                        job.title
+                                                                    );
+                                                                    setMyJobId(
+                                                                        job.id
+                                                                    );
                                                                     setMyJobDescription(
-                                                                        e.target
-                                                                            .value
-                                                                    )
-                                                                }
-                                                            ></textarea>
-                                                        </div>
-                                                        <div className="flex flex-col gap-2">
-                                                            <label htmlFor="jobdeadline">
-                                                                Deadline:
-                                                            </label>
-                                                            <input
-                                                                className="input input-neutral w-full"
-                                                                type="date"
-                                                                value={
-                                                                    myjobdeadline
-                                                                }
-                                                                onChange={(e) =>
+                                                                        job.description
+                                                                    );
+                                                                    setMyJobCompany(
+                                                                        job.company_name
+                                                                    );
                                                                     setMyJobDeadline(
-                                                                        e.target
-                                                                            .value
-                                                                    )
-                                                                }
-                                                            ></input>
-                                                        </div>
-
-                                                        <div className="flex flex-col gap-2">
-                                                            <label htmlFor="jobsalary">
-                                                                Salary:
-                                                            </label>
-                                                            <input
-                                                                className="input input-neutral w-full"
-                                                                type="number"
-                                                                value={
-                                                                    myjobsalary
-                                                                }
-                                                                onChange={(e) =>
+                                                                        job.deadline
+                                                                    );
                                                                     setMyJobSalary(
-                                                                        e.target
-                                                                            .value
-                                                                    )
-                                                                }
-                                                            ></input>
-                                                        </div>
-                                                        <div className="flex flex-col gap-2">
-                                                            <label htmlFor="joblocation">
-                                                                Location:
-                                                            </label>
-                                                            <input
-                                                                className="input input-neutral w-full"
-                                                                type="text"
-                                                                value={
-                                                                    myjoblocation
-                                                                }
-                                                                onChange={(e) =>
+                                                                        job.salary
+                                                                    );
                                                                     setMyJobLocation(
-                                                                        e.target
-                                                                            .value
-                                                                    )
-                                                                }
-                                                            ></input>
-                                                        </div>
-                                                        <div className="flex flex-col gap-2">
-                                                            <label htmlFor="jobcategory">
-                                                                Category:
-                                                            </label>
-                                                            <input
-                                                                className="input input-neutral w-full"
-                                                                type="text"
-                                                                value={
-                                                                    myjobcategory
-                                                                }
-                                                                onChange={(e) =>
+                                                                        job.location
+                                                                    );
                                                                     setMyJobCategory(
-                                                                        e.target
-                                                                            .value
-                                                                    )
-                                                                }
-                                                            ></input>
-                                                        </div>
+                                                                        job.category
+                                                                    );
 
-                                                        <div className="modal-action space-x-2">
-                                                            <button
-                                                                className="btn btn-success"
-                                                                onClick={async (
-                                                                    e
-                                                                ) => {
-                                                                    try {
-                                                                        const response =
-                                                                            await fetch(
-                                                                                `/api/jobs/${myjobid}`,
-                                                                                {
-                                                                                    method: "PUT",
-                                                                                    headers:
-                                                                                        {
-                                                                                            "Content-Type":
-                                                                                                "application/json",
-                                                                                            Authorization: `Bearer ${token}`,
-                                                                                        },
-                                                                                    body: JSON.stringify(
-                                                                                        {
-                                                                                            title: myjobtitle,
-                                                                                            company_name:
-                                                                                                myjobcompany,
-                                                                                            description:
-                                                                                                myjobdescription,
-                                                                                            deadline:
-                                                                                                myjobdeadline,
-                                                                                            salary: myjobsalary,
-                                                                                            location:
-                                                                                                myjoblocation,
-                                                                                            category:
-                                                                                                myjobcategory,
-                                                                                        }
-                                                                                    ),
-                                                                                }
-                                                                            );
-                                                                        if (
-                                                                            response.ok
-                                                                        ) {
-                                                                            alert(
-                                                                                "Job updated successfully!"
-                                                                            );
-                                                                            document
-                                                                                .getElementById(
-                                                                                    `job_modal_${myjobid}`
-                                                                                )
-                                                                                .close();
-                                                                            window.location.reload();
-                                                                        } else {
-                                                                            alert(
-                                                                                "Failed to update job."
-                                                                            );
-                                                                        }
-                                                                    } catch (error) {
-                                                                        console.error(
-                                                                            "Error updating job:",
-                                                                            error
-                                                                        );
-                                                                        alert(
-                                                                            "An error occurred while updating the job."
-                                                                        );
-                                                                    }
+                                                                    document
+                                                                        .getElementById(
+                                                                            `job_modal_${job.id}`
+                                                                        )
+                                                                        .showModal();
                                                                 }}
                                                             >
-                                                                Save Changes
-                                                            </button>
-                                                            <form method="dialog">
-                                                                {/* if there is a button in form, it will close the modal */}
-                                                                <button
-                                                                    className="btn"
-                                                                    onClick={() => {
-                                                                        setMyJobTitle(
-                                                                            ""
+                                                                {job.title
+                                                                    .length > 20
+                                                                    ? `${job.title.slice(
+                                                                          0,
+                                                                          20
+                                                                      )}...`
+                                                                    : job.title}{" "}
+                                                                –{" "}
+                                                                <span className="text-success">
+                                                                    Active
+                                                                </span>
+                                                            </div>
+                                                            <dialog
+                                                                id={`job_modal_${job.id}`}
+                                                                className="modal modal-bottom sm:modal-middle"
+                                                            >
+                                                                <div className="modal-box flex flex-col gap-4">
+                                                                    <div className="flex flex-col gap-2">
+                                                                        <label htmlFor="jobtitle">
+                                                                            Job
+                                                                            Title:
+                                                                        </label>
+                                                                        <input
+                                                                            className="input input-neutral w-full"
+                                                                            type="text"
+                                                                            value={
+                                                                                myjobtitle
+                                                                            }
+                                                                            onChange={(
+                                                                                e
+                                                                            ) =>
+                                                                                setMyJobTitle(
+                                                                                    e
+                                                                                        .target
+                                                                                        .value
+                                                                                )
+                                                                            }
+                                                                        />
+                                                                    </div>
+                                                                    <div className="flex flex-col gap-2">
+                                                                        <label htmlFor="jobcompany">
+                                                                            Company
+                                                                            Name:
+                                                                        </label>
+                                                                        <input
+                                                                            className="input input-neutral w-full"
+                                                                            type="text"
+                                                                            value={
+                                                                                myjobcompany
+                                                                            }
+                                                                            onChange={(
+                                                                                e
+                                                                            ) =>
+                                                                                setMyJobCompany(
+                                                                                    e
+                                                                                        .target
+                                                                                        .value
+                                                                                )
+                                                                            }
+                                                                        ></input>
+                                                                    </div>
+                                                                    <div className="flex flex-col gap-2">
+                                                                        <label htmlFor="jobdescription">
+                                                                            Description:
+                                                                        </label>
+                                                                        <textarea
+                                                                            className="textarea textarea-bordered w-full"
+                                                                            placeholder="Job description"
+                                                                            value={
+                                                                                myjobdescription
+                                                                            }
+                                                                            onChange={(
+                                                                                e
+                                                                            ) =>
+                                                                                setMyJobDescription(
+                                                                                    e
+                                                                                        .target
+                                                                                        .value
+                                                                                )
+                                                                            }
+                                                                        ></textarea>
+                                                                    </div>
+                                                                    <div className="flex flex-col gap-2">
+                                                                        <label htmlFor="jobdeadline">
+                                                                            Deadline:
+                                                                        </label>
+                                                                        <input
+                                                                            className="input input-neutral w-full"
+                                                                            type="date"
+                                                                            value={
+                                                                                myjobdeadline
+                                                                            }
+                                                                            onChange={(
+                                                                                e
+                                                                            ) =>
+                                                                                setMyJobDeadline(
+                                                                                    e
+                                                                                        .target
+                                                                                        .value
+                                                                                )
+                                                                            }
+                                                                        ></input>
+                                                                    </div>
+
+                                                                    <div className="flex flex-col gap-2">
+                                                                        <label htmlFor="jobsalary">
+                                                                            Salary:
+                                                                        </label>
+                                                                        <input
+                                                                            className="input input-neutral w-full"
+                                                                            type="number"
+                                                                            value={
+                                                                                myjobsalary
+                                                                            }
+                                                                            onChange={(
+                                                                                e
+                                                                            ) =>
+                                                                                setMyJobSalary(
+                                                                                    e
+                                                                                        .target
+                                                                                        .value
+                                                                                )
+                                                                            }
+                                                                        ></input>
+                                                                    </div>
+                                                                    <div className="flex flex-col gap-2">
+                                                                        <label htmlFor="joblocation">
+                                                                            Location:
+                                                                        </label>
+                                                                        <input
+                                                                            className="input input-neutral w-full"
+                                                                            type="text"
+                                                                            value={
+                                                                                myjoblocation
+                                                                            }
+                                                                            onChange={(
+                                                                                e
+                                                                            ) =>
+                                                                                setMyJobLocation(
+                                                                                    e
+                                                                                        .target
+                                                                                        .value
+                                                                                )
+                                                                            }
+                                                                        ></input>
+                                                                    </div>
+                                                                    <div className="flex flex-col gap-2">
+                                                                        <label htmlFor="jobcategory">
+                                                                            Category:
+                                                                        </label>
+                                                                        <input
+                                                                            className="input input-neutral w-full"
+                                                                            type="text"
+                                                                            value={
+                                                                                myjobcategory
+                                                                            }
+                                                                            onChange={(
+                                                                                e
+                                                                            ) =>
+                                                                                setMyJobCategory(
+                                                                                    e
+                                                                                        .target
+                                                                                        .value
+                                                                                )
+                                                                            }
+                                                                        ></input>
+                                                                    </div>
+
+                                                                    <div className="modal-action space-x-2">
+                                                                        <button
+                                                                            className="btn btn-success"
+                                                                            onClick={async (
+                                                                                e
+                                                                            ) => {
+                                                                                try {
+                                                                                    const response =
+                                                                                        await fetch(
+                                                                                            `/api/jobs/${myjobid}`,
+                                                                                            {
+                                                                                                method: "PUT",
+                                                                                                headers:
+                                                                                                    {
+                                                                                                        "Content-Type":
+                                                                                                            "application/json",
+                                                                                                        Authorization: `Bearer ${token}`,
+                                                                                                    },
+                                                                                                body: JSON.stringify(
+                                                                                                    {
+                                                                                                        title: myjobtitle,
+                                                                                                        company_name:
+                                                                                                            myjobcompany,
+                                                                                                        description:
+                                                                                                            myjobdescription,
+                                                                                                        deadline:
+                                                                                                            myjobdeadline,
+                                                                                                        salary: myjobsalary,
+                                                                                                        location:
+                                                                                                            myjoblocation,
+                                                                                                        category:
+                                                                                                            myjobcategory,
+                                                                                                    }
+                                                                                                ),
+                                                                                            }
+                                                                                        );
+                                                                                    if (
+                                                                                        response.ok
+                                                                                    ) {
+                                                                                        alert(
+                                                                                            "Job updated successfully!"
+                                                                                        );
+                                                                                        document
+                                                                                            .getElementById(
+                                                                                                `job_modal_${myjobid}`
+                                                                                            )
+                                                                                            .close();
+                                                                                        window.location.reload();
+                                                                                    } else {
+                                                                                        alert(
+                                                                                            "Failed to update job."
+                                                                                        );
+                                                                                    }
+                                                                                } catch (error) {
+                                                                                    console.error(
+                                                                                        "Error updating job:",
+                                                                                        error
+                                                                                    );
+                                                                                    alert(
+                                                                                        "An error occurred while updating the job."
+                                                                                    );
+                                                                                }
+                                                                            }}
+                                                                        >
+                                                                            Save
+                                                                            Changes
+                                                                        </button>
+                                                                        <form method="dialog">
+                                                                            {/* if there is a button in form, it will close the modal */}
+                                                                            <button
+                                                                                className="btn"
+                                                                                onClick={() => {
+                                                                                    setMyJobTitle(
+                                                                                        ""
+                                                                                    );
+                                                                                    setMyJobId(
+                                                                                        0
+                                                                                    );
+                                                                                    setMyJobDescription(
+                                                                                        ""
+                                                                                    );
+                                                                                    setMyJobCompany(
+                                                                                        ""
+                                                                                    );
+                                                                                    setMyJobDeadline(
+                                                                                        ""
+                                                                                    );
+                                                                                    setMyJobSalary(
+                                                                                        0
+                                                                                    );
+                                                                                    setMyJobLocation(
+                                                                                        ""
+                                                                                    );
+                                                                                    setMyJobCategory(
+                                                                                        ""
+                                                                                    );
+                                                                                }}
+                                                                            >
+                                                                                Close
+                                                                            </button>
+                                                                        </form>
+                                                                    </div>
+                                                                </div>
+                                                            </dialog>
+                                                            <div
+                                                                className="w-20 btn btn-sm shadow mx-2"
+                                                                onClick={() => {
+                                                                    document
+                                                                        .getElementById(
+                                                                            `job_admin_details_modal_${job?.id}`
+                                                                        )
+                                                                        .showModal();
+                                                                    const acceptedApplications =
+                                                                        job.applications.filter(
+                                                                            (
+                                                                                app
+                                                                            ) =>
+                                                                                app.status ===
+                                                                                "accepted"
                                                                         );
-                                                                        setMyJobId(
-                                                                            0
+                                                                    const notAcceptedApplications =
+                                                                        job.applications.filter(
+                                                                            (
+                                                                                app
+                                                                            ) =>
+                                                                                app.status !==
+                                                                                "accepted"
                                                                         );
-                                                                        setMyJobDescription(
-                                                                            ""
-                                                                        );
-                                                                        setMyJobCompany(
-                                                                            ""
-                                                                        );
-                                                                        setMyJobDeadline(
-                                                                            ""
-                                                                        );
-                                                                        setMyJobSalary(
-                                                                            0
-                                                                        );
-                                                                        setMyJobLocation(
-                                                                            ""
-                                                                        );
-                                                                        setMyJobCategory(
-                                                                            ""
-                                                                        );
-                                                                    }}
-                                                                >
-                                                                    Close
-                                                                </button>
-                                                            </form>
+                                                                    setShortlistedApplications(
+                                                                        acceptedApplications
+                                                                    );
+                                                                    setGeneralApplications(
+                                                                        notAcceptedApplications
+                                                                    );
+                                                                }}
+                                                            >
+                                                                view
+                                                            </div>
+                                                            <dialog
+                                                                id={`job_admin_details_modal_${job?.id}`}
+                                                                className="modal"
+                                                            >
+                                                                <div className="modal-box">
+                                                                    <h3 className="font-bold text-lg mb-2">
+                                                                        {
+                                                                            job?.title
+                                                                        }
+                                                                    </h3>
+                                                                    <p className="badge badge-soft badge-error py-1 mb-2">
+                                                                        Deadline:{" "}
+                                                                        {
+                                                                            job?.deadline
+                                                                        }
+                                                                    </p>
+                                                                    <p className="py-1">
+                                                                        <b>
+                                                                            Location:{" "}
+                                                                        </b>
+                                                                        {
+                                                                            job?.location
+                                                                        }
+                                                                    </p>
+
+                                                                    <p className="py-1">
+                                                                        <b>
+                                                                            Company:{" "}
+                                                                        </b>
+                                                                        {
+                                                                            job?.company_name
+                                                                        }
+                                                                    </p>
+
+                                                                    <p className="py-1">
+                                                                        <b>
+                                                                            Salary:{" "}
+                                                                        </b>
+                                                                        {
+                                                                            job?.salary
+                                                                        }{" "}
+                                                                        tk.
+                                                                    </p>
+                                                                    <p className="py-1">
+                                                                        <b>
+                                                                            Description:{" "}
+                                                                        </b>
+                                                                        {
+                                                                            job?.description
+                                                                        }
+                                                                    </p>
+                                                                    <div className="overflow-x-auto">
+                                                                        <div>
+                                                                            <div>
+                                                                                <h3 className="font-bold text-lg mb-2">
+                                                                                    Short-Listed
+                                                                                    Applicants
+                                                                                </h3>
+                                                                            </div>
+                                                                            <table className="table table-zebra">
+                                                                                {/* head */}
+                                                                                <thead>
+                                                                                    <tr>
+                                                                                        <th></th>
+                                                                                        <th>
+                                                                                            Name
+                                                                                        </th>
+                                                                                        <th>
+                                                                                            Email
+                                                                                        </th>
+                                                                                        <th>
+                                                                                            status
+                                                                                        </th>
+                                                                                        <th></th>
+                                                                                    </tr>
+                                                                                </thead>
+                                                                                <tbody>
+                                                                                    {/* row 1 */}
+                                                                                    {shortlistedApplications.map(
+                                                                                        (
+                                                                                            application,
+                                                                                            index
+                                                                                        ) => (
+                                                                                            <>
+                                                                                                <tr
+                                                                                                    key={
+                                                                                                        application.id +
+                                                                                                        index
+                                                                                                    }
+                                                                                                >
+                                                                                                    <th>
+                                                                                                        {index +
+                                                                                                            1}
+                                                                                                    </th>
+                                                                                                    <td>
+                                                                                                        {
+                                                                                                            application
+                                                                                                                .user
+                                                                                                                .first_name
+                                                                                                        }{" "}
+                                                                                                        {
+                                                                                                            application
+                                                                                                                .user
+                                                                                                                .last_name
+                                                                                                        }
+                                                                                                    </td>
+                                                                                                    <td>
+                                                                                                        {
+                                                                                                            application
+                                                                                                                .user
+                                                                                                                .email
+                                                                                                        }
+                                                                                                    </td>
+                                                                                                    <td>
+                                                                                                        <select
+                                                                                                            value={
+                                                                                                                job.status
+                                                                                                            }
+                                                                                                            onChange={(
+                                                                                                                e
+                                                                                                            ) =>
+                                                                                                                handleStatusChange(
+                                                                                                                    e,
+                                                                                                                    application.id,
+                                                                                                                    job?.id
+                                                                                                                )
+                                                                                                            }
+                                                                                                            className="px-3 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                                                                        >
+                                                                                                            {[
+                                                                                                                "pending",
+                                                                                                                "reviewed",
+                                                                                                                "accepted",
+                                                                                                                "rejected",
+                                                                                                            ].map(
+                                                                                                                (
+                                                                                                                    status,
+                                                                                                                    index
+                                                                                                                ) => (
+                                                                                                                    <>
+                                                                                                                        <option
+                                                                                                                            key={
+                                                                                                                                index
+                                                                                                                            }
+                                                                                                                            value={
+                                                                                                                                status
+                                                                                                                            }
+                                                                                                                            selected={
+                                                                                                                                application.status ===
+                                                                                                                                status
+                                                                                                                            }
+                                                                                                                        >
+                                                                                                                            {status
+                                                                                                                                .charAt(
+                                                                                                                                    0
+                                                                                                                                )
+                                                                                                                                .toUpperCase() +
+                                                                                                                                status.slice(
+                                                                                                                                    1
+                                                                                                                                )}
+                                                                                                                        </option>
+                                                                                                                    </>
+                                                                                                                )
+                                                                                                            )}
+                                                                                                        </select>
+                                                                                                    </td>
+                                                                                                    <td
+                                                                                                        className="btn my-1"
+                                                                                                        onClick={() =>
+                                                                                                            document
+                                                                                                                .getElementById(
+                                                                                                                    `cv_modal_${application?.id}`
+                                                                                                                )
+                                                                                                                .showModal()
+                                                                                                        }
+                                                                                                    >
+                                                                                                        Cover
+                                                                                                        Letter
+                                                                                                        &
+                                                                                                        CV
+                                                                                                    </td>
+                                                                                                    <td></td>
+                                                                                                </tr>
+                                                                                                <dialog
+                                                                                                    id={`cv_modal_${application?.id}`}
+                                                                                                    className="modal"
+                                                                                                >
+                                                                                                    <div className="modal-box">
+                                                                                                        <form method="dialog">
+                                                                                                            {/* if there is a button in form, it will close the modal */}
+                                                                                                            <button className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">
+                                                                                                                ✕
+                                                                                                            </button>
+                                                                                                        </form>
+                                                                                                        <h3 className="font-bold text-lg">
+                                                                                                            {
+                                                                                                                application
+                                                                                                                    .user
+                                                                                                                    .email
+                                                                                                            }
+                                                                                                        </h3>
+                                                                                                        <p className="py-4">
+                                                                                                            <b>
+                                                                                                                Cover
+                                                                                                                Letter:{" "}
+                                                                                                            </b>
+                                                                                                            {
+                                                                                                                application.cover_letter
+                                                                                                            }
+                                                                                                        </p>
+                                                                                                        <div>
+                                                                                                            <iframe
+                                                                                                                src={`/storage/${application.cv_path}`}
+                                                                                                                className="w-full h-96"
+                                                                                                                title="Resume"
+                                                                                                            ></iframe>
+                                                                                                        </div>
+                                                                                                    </div>
+                                                                                                </dialog>
+                                                                                            </>
+                                                                                        )
+                                                                                    )}
+                                                                                </tbody>
+                                                                            </table>
+                                                                        </div>
+                                                                        <div>
+                                                                            <div>
+                                                                                <h3 className="font-bold text-lg mb-2">
+                                                                                    Applications
+                                                                                </h3>
+                                                                            </div>
+                                                                            <table className="table table-zebra">
+                                                                                {/* head */}
+                                                                                <thead>
+                                                                                    <tr>
+                                                                                        <th></th>
+                                                                                        <th>
+                                                                                            Name
+                                                                                        </th>
+                                                                                        <th>
+                                                                                            Email
+                                                                                        </th>
+                                                                                        <th>
+                                                                                            Status
+                                                                                        </th>
+                                                                                        <th></th>
+                                                                                    </tr>
+                                                                                </thead>
+                                                                                <tbody>
+                                                                                    {/* row 1 */}
+                                                                                    {generalApplications.map(
+                                                                                        (
+                                                                                            application,
+                                                                                            index
+                                                                                        ) => (
+                                                                                            <>
+                                                                                                <tr
+                                                                                                    key={
+                                                                                                        index
+                                                                                                    }
+                                                                                                >
+                                                                                                    <th>
+                                                                                                        {index +
+                                                                                                            1}
+                                                                                                    </th>
+                                                                                                    <td>
+                                                                                                        {
+                                                                                                            application
+                                                                                                                .user
+                                                                                                                .first_name
+                                                                                                        }{" "}
+                                                                                                        {
+                                                                                                            application
+                                                                                                                .user
+                                                                                                                .last_name
+                                                                                                        }
+                                                                                                    </td>
+                                                                                                    <td>
+                                                                                                        {
+                                                                                                            application
+                                                                                                                .user
+                                                                                                                .email
+                                                                                                        }
+                                                                                                    </td>
+                                                                                                    <td>
+                                                                                                        <select
+                                                                                                            value={
+                                                                                                                job.status
+                                                                                                            }
+                                                                                                            onChange={(
+                                                                                                                e
+                                                                                                            ) =>
+                                                                                                                handleStatusChange(
+                                                                                                                    e,
+                                                                                                                    application.id,
+                                                                                                                    job?.id
+                                                                                                                )
+                                                                                                            }
+                                                                                                            className="px-3 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                                                                        >
+                                                                                                            {[
+                                                                                                                "pending",
+                                                                                                                "reviewed",
+                                                                                                                "accepted",
+                                                                                                                "rejected",
+                                                                                                            ].map(
+                                                                                                                (
+                                                                                                                    status,
+                                                                                                                    index
+                                                                                                                ) => (
+                                                                                                                    <>
+                                                                                                                        <option
+                                                                                                                            key={
+                                                                                                                                index
+                                                                                                                            }
+                                                                                                                            value={
+                                                                                                                                status
+                                                                                                                            }
+                                                                                                                            selected={
+                                                                                                                                application.status ===
+                                                                                                                                status
+                                                                                                                            }
+                                                                                                                        >
+                                                                                                                            {status
+                                                                                                                                .charAt(
+                                                                                                                                    0
+                                                                                                                                )
+                                                                                                                                .toUpperCase() +
+                                                                                                                                status.slice(
+                                                                                                                                    1
+                                                                                                                                )}
+                                                                                                                        </option>
+                                                                                                                    </>
+                                                                                                                )
+                                                                                                            )}
+                                                                                                        </select>
+                                                                                                    </td>
+                                                                                                    <td
+                                                                                                        className="btn my-1"
+                                                                                                        onClick={() =>
+                                                                                                            document
+                                                                                                                .getElementById(
+                                                                                                                    `cv_modal_${application?.id}`
+                                                                                                                )
+                                                                                                                .showModal()
+                                                                                                        }
+                                                                                                    >
+                                                                                                        Cover
+                                                                                                        Letter
+                                                                                                        &
+                                                                                                        CV
+                                                                                                    </td>
+                                                                                                    <td></td>
+                                                                                                </tr>
+                                                                                                <dialog
+                                                                                                    id={`cv_modal_${application?.id}`}
+                                                                                                    className="modal"
+                                                                                                >
+                                                                                                    <div className="modal-box">
+                                                                                                        <form method="dialog">
+                                                                                                            {/* if there is a button in form, it will close the modal */}
+                                                                                                            <button className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">
+                                                                                                                ✕
+                                                                                                            </button>
+                                                                                                        </form>
+                                                                                                        <h3 className="font-bold text-lg">
+                                                                                                            {
+                                                                                                                application
+                                                                                                                    .user
+                                                                                                                    .email
+                                                                                                            }
+                                                                                                        </h3>
+                                                                                                        <p className="py-4">
+                                                                                                            <b>
+                                                                                                                Cover
+                                                                                                                Letter:{" "}
+                                                                                                            </b>
+                                                                                                            {
+                                                                                                                application.cover_letter
+                                                                                                            }
+                                                                                                        </p>
+                                                                                                        <div>
+                                                                                                            <iframe
+                                                                                                                src={`/storage/${application.cv_path}`}
+                                                                                                                className="w-full h-96"
+                                                                                                                title="Resume"
+                                                                                                            ></iframe>
+                                                                                                        </div>
+                                                                                                    </div>
+                                                                                                </dialog>
+                                                                                            </>
+                                                                                        )
+                                                                                    )}
+                                                                                </tbody>
+                                                                            </table>
+                                                                        </div>
+                                                                    </div>
+
+                                                                    <div className="modal-action">
+                                                                        <form method="dialog">
+                                                                            {/* if there is a button in form, it will close the modal */}
+                                                                            <button
+                                                                                className="btn"
+                                                                                onClick={() => {
+                                                                                    setShortlistedApplications(
+                                                                                        []
+                                                                                    );
+                                                                                    setGeneralApplications(
+                                                                                        []
+                                                                                    );
+                                                                                }}
+                                                                            >
+                                                                                Close
+                                                                            </button>
+                                                                        </form>
+                                                                    </div>
+                                                                </div>
+                                                            </dialog>
+
+                                                            <div className="w-20 text-sm btn btn-error btn-sm">
+                                                                Delete
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                </dialog>
-                                                <div className="w-20 text-sm btn btn-error btn-sm">
-                                                    Delete
-                                                </div>
-                                            </div>
-                                        </li>
-                                    ))
-                                ) : (
-                                    <li>No jobs posted yet.</li>
-                                )}
-                            </ul>
+                                                    </li>
+                                                ))
+                                            ) : (
+                                                <li>No jobs posted yet.</li>
+                                            )}
+                                        </ul>
+                                    </div>
+                                    <div className="modal-action">
+                                        <form method="dialog">
+                                            {/* if there is a button in form, it will close the modal */}
+                                            <button className="btn">
+                                                Close
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </dialog>
                         </div>
                     </div>
                 </div>
@@ -874,7 +1524,16 @@ const Dashboard = () => {
                                         key={job?.id}
                                         className="card bg-base-200 p-4"
                                     >
-                                        <h3 className="font-semibold">
+                                        <h3
+                                            className="font-semibold cursor-pointer hover:underline"
+                                            onClick={() =>
+                                                document
+                                                    .getElementById(
+                                                        `job_details_modal_${job?.id}`
+                                                    )
+                                                    .showModal()
+                                            }
+                                        >
                                             {job?.title}
                                         </h3>
                                         <p className="text-sm">
@@ -895,6 +1554,46 @@ const Dashboard = () => {
                                         >
                                             Apply Now
                                         </button>
+                                        <dialog
+                                            id={`job_details_modal_${job?.id}`}
+                                            className="modal"
+                                        >
+                                            <div className="modal-box">
+                                                <h3 className="font-bold text-lg">
+                                                    {job?.title}
+                                                </h3>
+                                                <p className="badge badge-soft badge-error py-1">
+                                                    Deadline: {job?.deadline}
+                                                </p>
+                                                <p className="py-1">
+                                                    <b>Location: </b>
+                                                    {job?.location}
+                                                </p>
+
+                                                <p className="py-1">
+                                                    <b>Company: </b>
+                                                    {job?.company_name}
+                                                </p>
+
+                                                <p className="py-1">
+                                                    <b>Salary: </b>
+                                                    {job?.salary} tk.
+                                                </p>
+                                                <p className="py-1">
+                                                    <b>Description: </b>
+                                                    {job?.description}
+                                                </p>
+
+                                                <div className="modal-action">
+                                                    <form method="dialog">
+                                                        {/* if there is a button in form, it will close the modal */}
+                                                        <button className="btn">
+                                                            Close
+                                                        </button>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </dialog>
 
                                         <dialog
                                             id={`my_modal_${job?.id}`}
@@ -971,5 +1670,3 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
-
-// JobDashboard.jsx

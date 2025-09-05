@@ -32,4 +32,8 @@ class Application extends Model
     {
         return $this->belongsTo(Job::class);
     }
+    public function notifications()
+    {
+        return $this->hasMany(Notification::class);
+    }
 }
